@@ -34,8 +34,10 @@ async def submit_rating(
     # Upsert the rating
     rating = await rating_service.upsert_rating(db, current_user.id, payload.anime_id, payload.score)
 
-    # Recalculate Bayesian stats in background (non-blocking)
-    background_tasks.add_task(rating_service.recalculate_stats, db, payload.anime_id)
+    # Recalculate Bayesian stats in background (non-blocking).
+    # recalculate_stats opens its own DB session — the request session is
+    # already closed by the time BackgroundTasks execute.
+    background_tasks.add_task(rating_service.recalculate_stats, payload.anime_id)
 
     return rating
 

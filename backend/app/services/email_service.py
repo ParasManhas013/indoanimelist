@@ -1,3 +1,4 @@
+import asyncio
 import resend
 
 from app.config import settings
@@ -34,9 +35,14 @@ async def send_verification_email(to_email: str, token: str) -> None:
     </html>
     """
 
-    resend.Emails.send({
-        "from": f"{settings.FROM_NAME} <{settings.FROM_EMAIL}>",
-        "to": [to_email],
-        "subject": "Verify your IndoAnimeList account",
-        "html": html_content,
-    })
+    # resend.Emails.send() is synchronous — run in a thread pool to avoid
+    # blocking the async event loop during the HTTP call to Resend's API.
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": f"{settings.FROM_NAME} <{settings.FROM_EMAIL}>",
+            "to": [to_email],
+            "subject": "Verify your IndoAnimeList account",
+            "html": html_content,
+        },
+    )

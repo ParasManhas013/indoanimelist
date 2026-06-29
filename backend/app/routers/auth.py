@@ -15,12 +15,16 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
     is_prod = settings.ENVIRONMENT == "production"
+    # Cross-origin deployments (Vercel → Render) require SameSite=None + Secure.
+    # SameSite=Lax causes browsers to silently drop cookies on cross-origin requests,
+    # making every authenticated call return 401. In development we use Lax (same-origin).
+    samesite: str = "none" if is_prod else "lax"
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=is_prod,
-        samesite="lax",
+        secure=is_prod,  # SameSite=None requires Secure=True (enforced in prod)
+        samesite=samesite,
         max_age=settings.JWT_EXPIRE_DAYS * 86400,
     )
     response.set_cookie(
@@ -28,7 +32,7 @@ def _set_auth_cookies(response: Response, access_token: str, refresh_token: str)
         value=refresh_token,
         httponly=True,
         secure=is_prod,
-        samesite="lax",
+        samesite=samesite,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
     )
 
