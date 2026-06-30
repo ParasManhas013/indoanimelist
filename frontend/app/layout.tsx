@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "IndoAnimeList — India's Anime Leaderboard",
@@ -26,6 +27,7 @@ export default function RootLayout({
         <main className="page-wrapper">
           {children}
         </main>
+        <Analytics />
       </body>
     </html>
   );
