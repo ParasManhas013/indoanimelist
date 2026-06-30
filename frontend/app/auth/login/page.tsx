@@ -18,6 +18,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(email, password);
+      router.refresh(); // Force server components to re-render with the new auth cookie
       router.push("/");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed. Please try again.");
