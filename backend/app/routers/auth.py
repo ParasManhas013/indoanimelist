@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserLogin, UserResponse, MessageResponse
 from app.services import auth_service
-from app.services.email_service import send_verification_email
+# from app.services.email_service import send_verification_email  # email verification disabled
 from app.config import settings
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -41,6 +41,7 @@ def _set_auth_cookies(response: Response, access_token: str, refresh_token: str)
 async def register(
     payload: UserCreate,
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ):
     # Extract client IP
@@ -62,20 +63,23 @@ async def register(
             detail="An account with this email already exists.",
         )
 
-    # Create user
-    verification_token = auth_service.create_verification_token()
+    # Create user — auto-verified (no email verification required)
     user = User(
         email=payload.email,
         hashed_password=auth_service.hash_password(payload.password),
-        verification_token=verification_token,
+        is_verified=True,
     )
     db.add(user)
+
+    # Log the user in immediately after registration
+    access_token = auth_service.create_access_token(user.id)
+    refresh_token = auth_service.create_refresh_token()
+    user.refresh_token = refresh_token
+
     await db.commit()
+    _set_auth_cookies(response, access_token, refresh_token)
 
-    # Send verification email
-    await send_verification_email(payload.email, verification_token)
-
-    return {"message": "Account created. Please check your email to verify your account."}
+    return {"message": "Account created successfully. You are now logged in."}
 
 
 @router.get("/verify", response_model=MessageResponse)

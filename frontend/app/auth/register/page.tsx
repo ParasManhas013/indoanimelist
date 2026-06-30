@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { register } from "@/lib/api";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +22,8 @@ export default function RegisterPage() {
     setError(null);
     try {
       await register(email, password);
-      setSuccess(true);
+      router.refresh(); // update navbar with logged-in user
+      router.push("/");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
     } finally {
@@ -39,12 +41,7 @@ export default function RegisterPage() {
           <p>Create your account</p>
         </div>
 
-        {success ? (
-          <div className="auth-success">
-            <strong>🎉 Account created!</strong><br />
-            Please check your email and click the verification link to activate your account.
-          </div>
-        ) : (
+        {(
           <form id="register-form" className="auth-form" onSubmit={handleSubmit}>
             {error && <div className="auth-error">{error}</div>}
 
